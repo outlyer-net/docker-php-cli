@@ -15,7 +15,6 @@ build-%:
 		-f Dockerfile.$* \
 		.
 
-
 test: test-alpine
 test-%: build-%
 	docker run --rm -it -p 8000:80 $(IMAGE_NAME)
@@ -47,7 +46,7 @@ push-%:
 		.
 	-$(MAKE) multiarch-unbootstrap
 
-push-latest:
+push-latest: push-readme
 	-$(MAKE) multiarch-bootstrap
 	$(DOCKER_BUILDX) build --platform $(ARCHITECTURES) \
 		--tag $(IMAGE_NAME):latest \
@@ -55,4 +54,14 @@ push-latest:
 		-f Dockerfile.alpine \
 		.
 	-$(MAKE) multiarch-unbootstrap
+
+# Push updated readme to Docker Hub
+push-readme:
+	docker run --rm \
+		-v $(PWD)/README.md:/data/README.md \
+		-e DOCKERHUB_USERNAME=$(shell echo $(IMAGE_NAME) | cut -d/ -f1) \
+		-e DOCKERHUB_REPO_PREFIX=$(shell echo $(IMAGE_NAME) | cut -d/ -f1) \
+		-e DOCKERHUB_REPO_NAME=$(shell echo $(IMAGE_NAME) | cut -d/ -f2) \
+		-e DOCKERHUB_PASSWORD=$(shell relevation hub.docker.com 2>/dev/null | sed -E -e '/^Password/!d' -e 's/^(\w|:)*\s//') \
+		sheogorath/readme-to-dockerhub
 
