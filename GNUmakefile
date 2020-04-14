@@ -7,24 +7,39 @@ DOCKER_BUILDX=env DOCKER_CLI_EXPERIMENTAL=enabled docker buildx
 MULTIARCH_BUILDER_NAME=$(subst /,_,$(IMAGE_NAME))-multiarch-builder
 
 # Build locally
-build:
+build: build-alpine build-debian build-ubuntu
+build-%:
 	docker build \
 		--tag $(IMAGE_NAME) \
 		--tag $(IMAGE_NAME):$(shell date +%Y%m%d_%H%M%S) \
+		-f Dockerfile.$* \
 		.
 
+push: push-alpine push-debian push-ubuntu push-latest
 
 # XXX: As of this writing (2020-03) running this with --load instead of --push (i.e. locally),
 #      fails. Support for multi-arch in the daemon is pending, see https://github.com/docker/buildx/issues/59
-push:
+push-%:
 	-$(MAKE) multiarch-bootstrap
 	$(DOCKER_BUILDX) build --platform $(ARCHITECTURES) \
-		--tag $(IMAGE_NAME) \
+		--tag $(IMAGE_NAME):$* \
 		--push \
+		-f Dockerfile.$* \
 		.
 	-$(MAKE) multiarch-unbootstrap
 
-test: build
+push-latest:
+	-$(MAKE) multiarch-bootstrap
+	$(DOCKER_BUILDX) build --platform $(ARCHITECTURES) \
+		--tag $(IMAGE_NAME):latest \
+		--push \
+		-f Dockerfile.alpine \
+		.
+	-$(MAKE) multiarch-unbootstrap
+
+test: test-alpine
+
+test-%: build-%
 	docker run --rm -it -p 8000:80 $(IMAGE_NAME)
 
 inspect:

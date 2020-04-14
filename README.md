@@ -1,6 +1,7 @@
 # docker-php-cli
 
-A small docker image with just PHP in it, built on Alpine.
+A small docker image with just PHP in it, built on Alpine and alternatively
+on Debian or Ubuntu.
 \
 This image is intended to be used as a base for simple PHP web apps,
 [PHP's builtin server][php_builtin_server] can be used to that effect.
