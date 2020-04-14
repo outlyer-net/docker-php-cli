@@ -15,6 +15,25 @@ build-%:
 		-f Dockerfile.$* \
 		.
 
+
+test: test-alpine
+test-%: build-%
+	docker run --rm -it -p 8000:80 $(IMAGE_NAME)
+
+inspect:
+	$(DOCKER_BUILDX) imagetools inspect $(IMAGE_NAME)
+
+# Enable the new enhanced multi-arch support (requires Docker 19.03
+# and experimental mode)
+# https://docs.docker.com/docker-for-mac/multi-arch/
+multiarch-bootstrap:
+	$(DOCKER_BUILDX) create --use --name $(MULTIARCH_BUILDER_NAME)
+
+multiarch-unbootstrap:
+	$(DOCKER_BUILDX) rm $(MULTIARCH_BUILDER_NAME)
+
+### Rules below this point are used for pushing to Docker Hub
+
 push: push-alpine push-debian push-ubuntu push-latest
 
 # XXX: As of this writing (2020-03) running this with --load instead of --push (i.e. locally),
@@ -37,20 +56,3 @@ push-latest:
 		.
 	-$(MAKE) multiarch-unbootstrap
 
-test: test-alpine
-
-test-%: build-%
-	docker run --rm -it -p 8000:80 $(IMAGE_NAME)
-
-inspect:
-	$(DOCKER_BUILDX) imagetools inspect $(IMAGE_NAME)
-
-
-# Enable the new enhanced multi-arch support (requires Docker 19.03
-# and experimental mode)
-# https://docs.docker.com/docker-for-mac/multi-arch/
-multiarch-bootstrap:
-	$(DOCKER_BUILDX) create --use --name $(MULTIARCH_BUILDER_NAME)
-
-multiarch-unbootstrap:
-	$(DOCKER_BUILDX) rm $(MULTIARCH_BUILDER_NAME)
