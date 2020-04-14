@@ -1,5 +1,8 @@
 # Official and semi-official architectures: https://github.com/docker-library/official-images#architectures-other-than-amd64
+# Standard ARM and PC variants:
 ARCHITECTURES=linux/amd64,linux/arm64,linux/386,linux/arm/v7,linux/arm/v6
+# Ubuntu doesn't have arm/v6
+ARCHITECTURES_BLACKLIST_ubuntu=,linux/arm/v6
 IMAGE_NAME=outlyernet/php-cli
 
 DOCKER_BUILDX=env DOCKER_CLI_EXPERIMENTAL=enabled docker buildx
@@ -39,7 +42,9 @@ push: push-alpine push-debian push-ubuntu push-latest
 #      fails. Support for multi-arch in the daemon is pending, see https://github.com/docker/buildx/issues/59
 push-%:
 	-$(MAKE) multiarch-bootstrap
-	$(DOCKER_BUILDX) build --platform $(ARCHITECTURES) \
+	@# The $(subst) is used to remove missing platforms based on target
+	$(DOCKER_BUILDX) build --platform \
+		$(subst $(ARCHITECTURES_BLACKLIST_$*),,$(ARCHITECTURES)) \
 		--tag $(IMAGE_NAME):$* \
 		--push \
 		-f Dockerfile.$* \
